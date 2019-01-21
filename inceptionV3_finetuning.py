@@ -23,7 +23,7 @@ import cv2
 import os
 
 
-def get_args():
+def main():
     parse = argparse.ArgumentParser(description="Tensorflow train")
     parse.add_argument("--basedir", "-d", default="",
                        help="Path to directory of image classes")
@@ -43,37 +43,24 @@ def get_args():
                        help="Directory of validation image")
     parse.add_argument("--prefix", "-p", default="",
                        help="Prefix of filename")
-    return parse.parse_args()
-
-
-def main():
-    args = get_args()
+    args = parse.parse_args()
 
     train_dir = os.path.join(args.basedir, args.train)
     t_class_dirs = [d for d in glob.glob(train_dir+"/*") if os.path.isdir(d)]
     train_size = sum([len(glob.glob(d+"/*.jpg")) for d in t_class_dirs])
-    
+
     val_dir = os.path.join(args.basedir, args.val)
     v_class_dirs = [d for d in glob.glob(val_dir+"/*") if os.path.isdir(d)]
     val_size = sum([len(glob.glob(d+"/*.jpg")) for d in v_class_dirs])
-    
-    if set(t_class_dirs) != set(v_class_dirs):
-        print("Class name or numbers does not match.")
-        print("train")
-        print(list(set(t_class_dirs)))
-        print("val")
-        print(list(set(v_class_dirs)))
-        sys.exit(-1)
 
     n_classes = len(t_class_dirs)
-
 
     # NOTE: Set keras backend.
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     K.set_session(tf.Session(config=config))
-    K.set_image_data_format(channel_index)
-
+    channels_index = "channels_last"
+    K.set_image_data_format(channels_index)
 
     # NOTE: Construct model.
     base_model = InceptionV3(
@@ -98,7 +85,6 @@ def main():
                       optimizer=keras.optimizers.Adam(lr=0.0001),
                       metrics=['accuracy'])
 
-
     # NOTE: Setup generater.
     train_gen = ImageDataGenerator(
                     rescale=1. / 255,
@@ -106,7 +92,6 @@ def main():
                     # rotation_range=rotation_range
                 )
     test_gen = ImageDataGenerator(rescale=1. / 255)
-
 
     # NOTE: Define callbacks.
     callbacks = [
@@ -117,9 +102,7 @@ def main():
                                           verbose=1),
         keras.callbacks.EarlyStopping(monitor='val_acc', patience=10,
                                       mode='auto', verbose=1),
-        keras.callbacks.ModelCheckpoint(output+'/checkpoint-{epoch}.h5'),
     ]
-
 
     # NOTE: Execute training.
     history = gpu_model.fit_generator(
@@ -129,7 +112,7 @@ def main():
                             target_size=(args.img_size, args.img_size)
                         ),
                         callbacks=callbacks,
-                        epoch=args.epoch,
+                        epochs=args.epoch,
                         shuffle=True,
                         verbose=1,
                         validation_data=test_gen.flow_from_directory(
@@ -142,7 +125,6 @@ def main():
                         use_multiprocessing=True
               )
 
-
     # NOTE: Save model.
     model_json = model.to_json()
     save_name = os.path.join(args.output, args.prefix)
@@ -150,7 +132,6 @@ def main():
         json_file.write(model_json)
     model.save_weights("%s_model.h5" % save_name)
     model.save("%s_model.model" % save_name)
-
 
     # NOTE: Evalute model.
     score = gpu_model.evaluate_generator(
@@ -163,7 +144,6 @@ def main():
     loss, accuracy = score
     print('Test loss:', loss)
     print('Test accuracy:', accuracy)
-
 
     # NOTE: Save history as png image.
     history_elements = [
