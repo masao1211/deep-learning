@@ -1,5 +1,5 @@
 from keras.applications.vgg16 import VGG16, preprocess_input
-from keras.models import model_from_json
+from keras.models import model_from_json, load_model
 from keras.layers import MaxPooling2D, Convolution2D
 from keras.preprocessing import image
 from keras import models
@@ -17,7 +17,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
 def main():
-    parse = argparse.ArgumentParser(description="Chainer train")
+    parse = argparse.ArgumentParser(description="Visualize featuremap")
     parse.add_argument("--img", "-i", default=None,
                        help="Path to predict image file")
     parse.add_argument("--model", "-m", default=None,

@@ -24,7 +24,7 @@ import os
 
 
 def main():
-    parse = argparse.ArgumentParser(description="Tensorflow train")
+    parse = argparse.ArgumentParser(description="fine-tuning at Keras")
     parse.add_argument("--basedir", "-d", default="",
                        help="Path to directory of image classes")
     parse.add_argument("--output", "-o", default="output",
